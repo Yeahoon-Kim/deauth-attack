@@ -40,8 +40,7 @@ bool deauth_attack(const Param& param) {
         return 1;
     }
 
-    if(param.isAuth()) initDisconnectPacket(deauthPacket, param, true);
-    else initDisconnectPacket(deauthPacket, param, false);
+    initDisconnectPacket(deauthPacket, param, param.isAuth());
 
     while(not isEnd.load()) {
         if(pcap_sendpacket(pcap, reinterpret_cast<const u_char*>(&deauthPacket), sizeof(deauthPacket))) {

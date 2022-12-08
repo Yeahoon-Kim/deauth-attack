@@ -11,6 +11,5 @@
 
 extern std::atomic<bool> isEnd;
 
-void initDeauthPacket(deauth_packet& deauthPacket, const Param& param);
-void initAuthPacket(deauth_packet& deauthPacket, const Param& param);
+void initDisconnectPacket(deauth_packet& deauthPacket, const Param& param, bool isAuth);
 bool deauth_attack(const Param& param);
